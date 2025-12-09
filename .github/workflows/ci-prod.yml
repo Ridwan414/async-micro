@@ -69,6 +69,7 @@ jobs:
 
       - name: Image digest
         run: echo "Built production image for ${{ matrix.service.name }}"
+        
 
   # update-manifests:
   #   needs: build-and-push
