@@ -15,6 +15,7 @@ spec:
       containers:
       - name: worker
         image: asifmahmoud414/worker-service:v1
+        command: ["python", "-u", "/app/worker.py"]
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
