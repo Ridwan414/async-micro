@@ -1,0 +1,104 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: logging
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: logging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          env:
+            - name: MINIO_ROOT_USER
+              value: "minioadmin"
+            - name: MINIO_ROOT_PASSWORD
+              value: "minioadmin"
+          ports:
+            - containerPort: 9000
+              name: api
+            - containerPort: 9001
+              name: console
+          volumeMounts:
+            - name: minio-data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: minio-data
+          persistentVolumeClaim:
+            claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: logging
+spec:
+  selector:
+    app: minio
+  ports:
+    - port: 9000
+      targetPort: 9000
+      name: api
+    - port: 9001
+      targetPort: 9001
+      name: console
+---
+# Job to create the loki bucket
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-setup
+  namespace: logging
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: mc
+          image: minio/mc:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sleep 10
+              mc alias set myminio http://minio:9000 minioadmin minioadmin
+              mc mb myminio/loki-data --ignore-existing
+              mc mb myminio/loki-ruler --ignore-existing
+              echo "Buckets created successfully"

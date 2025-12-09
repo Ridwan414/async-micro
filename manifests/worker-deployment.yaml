@@ -15,3 +15,10 @@ spec:
       containers:
       - name: worker
         image: asifmahmoud414/worker-service:v1
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_USER
+          value: "admin"
+        - name: RABBITMQ_PASS
+          value: "admin"

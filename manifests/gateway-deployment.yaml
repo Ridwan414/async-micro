@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: Ridwan414/gateway-service:v1
+        image: asifmahmoud414/gateway-service:v1
         ports:
         - containerPort: 3000
         env:

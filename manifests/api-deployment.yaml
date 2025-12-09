@@ -17,3 +17,10 @@ spec:
         image: asifmahmoud414/api-service:v1
         ports:
         - containerPort: 8000
+        env:
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_USER
+          value: "admin"
+        - name: RABBITMQ_PASS
+          value: "admin"

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # RabbitMQ Message Broker
   rabbitmq:
@@ -22,9 +20,7 @@ services:
       - rabbitmq-data:/var/lib/rabbitmq
   # API Gateway
   gateway:
-    build:
-      context: ./services/gateway
-      dockerfile: Dockerfile
+    image: asifmahmoud414/gateway-service:v1
     container_name: gateway
     ports:
       - "3000:3000"
@@ -41,9 +37,7 @@ services:
 
   # Backend Service (Task Creator)
   backend:
-    build:
-      context: ./services/backend
-      dockerfile: Dockerfile
+    image: asifmahmoud414/api-service:v1
     container_name: backend
     ports:
       - "8000:8000"
@@ -60,9 +54,7 @@ services:
 
   # Product Service
   product:
-    build:
-      context: ./services/product
-      dockerfile: Dockerfile
+    image: asifmahmoud414/product-service:v1
     container_name: product
     ports:
       - "8001:8001"
@@ -72,9 +64,7 @@ services:
 
   # Worker Service (Task Consumer)
   worker:
-    build:
-      context: ./services/worker
-      dockerfile: Dockerfile
+    image: asifmahmoud414/worker-service:v1
     container_name: worker
     environment:
       RABBITMQ_HOST: rabbitmq
