@@ -21,9 +21,9 @@ export const options = {
   },
 };
 
-const GATEWAY_URL = __ENV.GATEWAY_URL || 'http://localhost:3000';
-const BACKEND_URL = __ENV.BACKEND_URL || 'http://localhost:8000';
-const PRODUCT_URL = __ENV.PRODUCT_URL || 'http://localhost:8001';
+const GATEWAY_URL = __ENV.GATEWAY_URL || 'http://localhost:30000';
+const BACKEND_URL = __ENV.BACKEND_URL || 'http://localhost:30080';
+const PRODUCT_URL = __ENV.PRODUCT_URL || 'http://localhost:30081';
 
 export default function () {
   // Test 1: Health check via gateway

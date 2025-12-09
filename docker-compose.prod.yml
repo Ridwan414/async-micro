@@ -148,7 +148,9 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: false
     volumes:
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/provisioning/dashboards/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml
+      - ./monitoring/grafana/provisioning/dashboards/microservices-dashboard.json:/var/lib/grafana/dashboards/microservices-dashboard.json
       - grafana-data:/var/lib/grafana
     depends_on:
       - prometheus
