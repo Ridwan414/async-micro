@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-test-staging
+  namespace: staging
+  labels:
+    app: load-test
+spec:
+  parallelism: 5  # Run 5 pods in parallel
+  completions: 5  # Total 5 completions
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: load-test
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: load-test
+        image: jordi/ab
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "========================================="
+          echo "  LOAD TEST - STAGING ENVIRONMENT"
+          echo "========================================="
+          echo "Target: http://gateway-service:3000"
+          echo "Using Apache Bench (ab)"
+          echo "Start time: $(date)"
+          echo ""
+
+          # Test 1: Warm-up
+          echo "=== Phase 1: Warm-up (30s) ==="
+          ab -n 5000 -c 50 -t 30 http://gateway-service:3000/health
+          echo "Phase 1 completed"
+          echo ""
+          sleep 5
+
+          # Test 2: Medium load - API
+          echo "=== Phase 2: API Service Load (60s) ==="
+          ab -n 10000 -c 100 -t 60 http://gateway-service:3000/api/health
+          echo "Phase 2 completed"
+          echo ""
+          sleep 5
+
+          # Test 3: Medium load - Product
+          echo "=== Phase 3: Product Service Load (60s) ==="
+          ab -n 10000 -c 100 -t 60 http://gateway-service:3000/products/health
+          echo "Phase 3 completed"
+          echo ""
+          sleep 5
+
+          # Test 4: Heavy load - parallel (trigger autoscaling)
+          echo "=== Phase 4: HEAVY LOAD - Trigger Autoscaling (180s) ==="
+          echo "Running 3 concurrent load tests..."
+          echo ""
+
+          ab -n 50000 -c 200 -t 180 http://gateway-service:3000/health > /tmp/test1.log 2>&1 &
+          ab -n 50000 -c 200 -t 180 http://gateway-service:3000/api/health > /tmp/test2.log 2>&1 &
+          ab -n 50000 -c 200 -t 180 http://gateway-service:3000/products/health > /tmp/test3.log 2>&1 &
+
+          # Wait for all tests to complete
+          wait
+
+          echo ""
+          echo "Phase 4 completed"
+          echo ""
+
+          # Summary
+          echo "========================================="
+          echo "  LOAD TEST COMPLETED"
+          echo "========================================="
+          echo "End time: $(date)"
+          echo ""
+          echo "Results summary:"
+          echo "- Gateway test: $(grep 'Requests per second' /tmp/test1.log | head -1 || echo 'N/A')"
+          echo "- API test: $(grep 'Requests per second' /tmp/test2.log | head -1 || echo 'N/A')"
+          echo "- Product test: $(grep 'Requests per second' /tmp/test3.log | head -1 || echo 'N/A')"
+          echo ""
+          echo "Check scaling: kubectl get hpa -n staging"
+          echo "Check pods: kubectl get pods -n staging"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+
