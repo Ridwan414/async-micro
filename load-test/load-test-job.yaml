@@ -1,10 +1,10 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: load-test-staging
+  name: load-test-ab
   namespace: staging
   labels:
-    app: load-test
+    app: load-test-ab
 spec:
   parallelism: 5  # Run 5 pods in parallel
   completions: 5  # Total 5 completions
