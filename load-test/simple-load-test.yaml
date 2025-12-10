@@ -1,0 +1,85 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-test-staging
+  namespace: staging
+  labels:
+    app: load-test
+    environment: staging
+spec:
+  parallelism: 10
+  completions: 10
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: load-test
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: load-test
+        image: curlimages/curl:8.5.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "========================================="
+          echo "  LOAD TEST POD $(hostname)"
+          echo "========================================="
+          echo "Target: http://gateway-service:3000"
+          echo "Start time: $(date)"
+          echo ""
+
+          # Function to generate load
+          generate_load() {
+            local url=$1
+            local duration=$2
+            echo "Loading $url for ${duration}s..."
+            local end=$(($(date +%s) + duration))
+            local count=0
+            while [ $(date +%s) -lt $end ]; do
+              curl -s "$url" > /dev/null &
+              count=$((count + 1))
+              if [ $((count % 100)) -eq 0 ]; then
+                echo "  Sent $count requests..."
+                wait  # Wait for background jobs to avoid too many processes
+              fi
+              sleep 0.05
+            done
+            wait
+            echo "  Completed $count requests"
+          }
+
+          # Phase 1: Warm-up
+          echo "=== Phase 1: Warm-up (30s) ==="
+          generate_load "http://gateway-service:3000/health" 30
+          echo ""
+          sleep 2
+
+          # Phase 2: API Load
+          echo "=== Phase 2: API Load (60s) ==="
+          generate_load "http://gateway-service:3000/api/health" 60
+          echo ""
+          sleep 2
+
+          # Phase 3: Product Load
+          echo "=== Phase 3: Product Load (60s) ==="
+          generate_load "http://gateway-service:3000/products/health" 60
+          echo ""
+          sleep 2
+
+          # Phase 4: Heavy Load
+          echo "=== Phase 4: HEAVY LOAD (120s) ==="
+          generate_load "http://gateway-service:3000/health" 120 &
+          generate_load "http://gateway-service:3000/api/health" 120 &
+          generate_load "http://gateway-service:3000/products/health" 120 &
+          wait
+          echo ""
+
+          echo "========================================="
+          echo "  LOAD TEST COMPLETE - $(hostname)"
+          echo "========================================="
+          echo "End time: $(date)"
+          echo ""
+          echo "Go to ArgoCD UI to see autoscaling!"
+
