@@ -8,5 +8,5 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: standard  # Using default storage class
+  storageClassName: local-path  # Works on both local Kind and remote server
 
