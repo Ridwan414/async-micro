@@ -16,6 +16,13 @@ spec:
       - name: worker
         image: asifmahmoud414/worker-service:v1-stag
         command: ["python", "-u", "/app/worker.py"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
