@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: spike-test-staging
+  namespace: staging
+  labels:
+    app: spike-test
+spec:
+  parallelism: 5
+  completions: 5
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: spike-test
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: spike-test
+        image: asifmahmoud414/gateway-service:v1-stag
+        command:
+        - node
+        - -e
+        - |
+          const http = require('http');
+
+          const endpoints = [
+            'http://gateway-service:3000/health',
+            'http://gateway-service:3000/api/health',
+            'http://gateway-service:3000/products/health'
+          ];
+
+          function makeRequest(url) {
+            return new Promise((resolve) => {
+              const req = http.get(url, { timeout: 2000 }, (res) => {
+                res.on('data', () => {});
+                res.on('end', () => resolve(true));
+              });
+              req.on('error', () => resolve(false));
+              req.on('timeout', () => { req.destroy(); resolve(false); });
+            });
+          }
+
+          async function runPhase(name, durationSec, concurrency, interval) {
+            console.log(`=== ${name} ===`);
+            const endTime = Date.now() + durationSec * 1000;
+            let count = 0;
+
+            while (Date.now() < endTime) {
+              const promises = [];
+              for (let i = 0; i < concurrency; i++) {
+                const url = endpoints[i % endpoints.length];
+                promises.push(makeRequest(url));
+              }
+              await Promise.all(promises);
+              count += concurrency;
+              await new Promise(r => setTimeout(r, interval));
+            }
+            console.log(`Completed - ~${count} requests sent\n`);
+          }
+
+          async function main() {
+            console.log('=========================================');
+            console.log('  SPIKE TEST - STAGING ENVIRONMENT');
+            console.log('=========================================');
+            console.log('Target: http://gateway-service:3000');
+            console.log('Pattern: Sudden traffic bursts to test autoscaling');
+            console.log(`Start time: ${new Date().toISOString()}\n`);
+
+            // Phase 1: Baseline
+            await runPhase('Phase 1: Baseline (20s)', 20, 5, 200);
+
+            // Phase 2: Spike #1 - Aggressive ramp up
+            await runPhase('Phase 2: SPIKE #1 - Aggressive (60s)', 60, 100, 20);
+
+            // Phase 3: Brief recovery
+            await runPhase('Phase 3: Brief Recovery (15s)', 15, 5, 500);
+
+            // Phase 4: Spike #2 - Extreme sustained load
+            await runPhase('Phase 4: SPIKE #2 - Extreme Sustained (90s)', 90, 150, 10);
+
+            // Phase 5: Final Recovery
+            await runPhase('Phase 5: Final Recovery (20s)', 20, 5, 200);
+
+            console.log('=========================================');
+            console.log('  SPIKE TEST COMPLETED');
+            console.log('=========================================');
+            console.log(`End time: ${new Date().toISOString()}\n`);
+            console.log('Check scaling: kubectl get hpa -n staging -w');
+            console.log('Check pods: kubectl get pods -n staging');
+          }
+
+          main().catch(console.error);
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
