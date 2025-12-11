@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: asifmahmoud414/api-service:stag-eea9f3b99e896f2ae6022d5b1cadf9e93dc2fed7
+        image: asifmahmoud414/api-service:stag-1439f58b6dbfe9efd7b480a9ee45ea994450d9d9
         ports:
         - containerPort: 8000
         resources:
