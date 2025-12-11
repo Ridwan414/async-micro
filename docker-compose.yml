@@ -103,6 +103,25 @@ services:
     deploy:
       replicas: 1
 
+  # Node Exporter - System metrics for Prometheus
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
 networks:
   microservices-network:
     driver: bridge
