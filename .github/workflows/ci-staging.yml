@@ -99,3 +99,35 @@ jobs:
             git commit -m "ci: update staging image tags to ${{ github.sha }} [skip ci]"
             git push origin stag
           fi
+
+      - name: Create Pull Request to main
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: staging-to-prod-${{ github.sha }}
+          base: main
+          title: "chore: promote staging to production (${{ github.sha }})"
+          body: |
+            ## 🚀 Promote Staging to Production
+            
+            This PR promotes the changes from staging to production.
+            
+            ### Changes:
+            - Updated staging manifests with images tagged: `stag-${{ github.sha }}`
+            - Services updated: api, gateway, product, worker
+            
+            ### Docker Images:
+            - `${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}`
+            - `${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}`
+            - `${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}`
+            - `${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}`
+            
+            ### Testing:
+            - ✅ Staging deployment successful
+            - ⏳ Please verify staging environment before merging
+            
+            **Source Branch:** `stag`
+            **Commit:** ${{ github.sha }}
+          labels: |
+            staging-promotion
+            auto-pr
