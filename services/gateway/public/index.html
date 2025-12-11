@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Async Micro Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Async Micro Dashboard</h1>
+      <p class="subtitle">Microservices Management</p>
+    </header>
+
+    <main>
+      <!-- Health Status -->
+      <section class="card">
+        <h2>Service Health</h2>
+        <div id="health-status" class="status-container">
+          <span class="status-badge loading">Checking...</span>
+        </div>
+      </section>
+
+      <!-- Items Management -->
+      <section class="card">
+        <h2>Items (MongoDB)</h2>
+        <form id="item-form" class="form-inline">
+          <input type="text" id="item-name" placeholder="Item name" required>
+          <input type="text" id="item-description" placeholder="Description">
+          <button type="submit" class="btn btn-primary">Add Item</button>
+        </form>
+        <ul id="items-list" class="items-list">
+          <li class="loading">Loading items...</li>
+        </ul>
+      </section>
+
+      <!-- Products -->
+      <section class="card">
+        <h2>Products</h2>
+        <div id="products-list" class="products-grid">
+          <p class="loading">Loading products...</p>
+        </div>
+      </section>
+
+      <!-- Create Task -->
+      <section class="card">
+        <h2>Create Task</h2>
+        <form id="task-form">
+          <input type="text" id="task-name" placeholder="Task name" required>
+          <button type="submit" class="btn btn-primary">Create Task</button>
+        </form>
+        <div id="task-result"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>Gateway: <code>localhost:3000</code></p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,4 +1,22 @@
 services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: async_micro
+    volumes:
+      - mongodb-data:/data/db
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # RabbitMQ Message Broker
   rabbitmq:
     image: rabbitmq:3-management
@@ -28,9 +46,15 @@ services:
       PORT: 3000
       BACKEND_SERVICE_URL: http://backend:8000
       PRODUCT_SERVICE_URL: http://product:8001
+      MONGODB_URI: mongodb://mongodb:27017
+      DB_NAME: async_micro
     depends_on:
-      - backend
-      - product
+      mongodb:
+        condition: service_healthy
+      backend:
+        condition: service_started
+      product:
+        condition: service_started
     networks:
       - microservices-network
     restart: unless-stopped
@@ -85,5 +109,7 @@ networks:
 
 volumes:
   rabbitmq-data:
+    driver: local
+  mongodb-data:
     driver: local
 

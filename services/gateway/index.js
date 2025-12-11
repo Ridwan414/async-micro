@@ -1,5 +1,9 @@
+require("./instrument.js");
+
 const express = require('express');
 const axios = require('axios');
+const path = require('path');
+const { connect, getDb } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,10 +12,16 @@ const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://product:8
 
 // Middleware
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'gateway' });
+});
+
+// Sentry test endpoint
+app.get("/debug-sentry", function mainHandler(req, res) {
+  throw new Error("My first Sentry error!");
 });
 
 // Route to create a task (proxies to backend service)
@@ -90,6 +100,42 @@ app.patch('/api/products/:id/stock', async (req, res) => {
   }
 });
 
+// MongoDB Items API
+app.get('/api/items', async (req, res) => {
+  try {
+    const db = getDb();
+    const items = await db.collection('items').find({}).toArray();
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: 'Database error', details: error.message });
+  }
+});
+
+app.post('/api/items', async (req, res) => {
+  try {
+    const db = getDb();
+    const item = { ...req.body, createdAt: new Date() };
+    const result = await db.collection('items').insertOne(item);
+    res.status(201).json({ _id: result.insertedId, ...item });
+  } catch (error) {
+    res.status(500).json({ error: 'Database error', details: error.message });
+  }
+});
+
+app.delete('/api/items/:id', async (req, res) => {
+  try {
+    const db = getDb();
+    const { ObjectId } = require('mongodb');
+    const result = await db.collection('items').deleteOne({ _id: new ObjectId(req.params.id) });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+    res.json({ message: 'Item deleted' });
+  } catch (error) {
+    res.status(500).json({ error: 'Database error', details: error.message });
+  }
+});
+
 // Helper function for error handling
 function handleServiceError(error, serviceName, res) {
   console.error(`Error forwarding request to ${serviceName} service:`, error.message);
@@ -130,9 +176,19 @@ app.use('*', (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`API Gateway running on port ${PORT}`);
-  console.log(`Backend service URL: ${BACKEND_SERVICE_URL}`);
-  console.log(`Product service URL: ${PRODUCT_SERVICE_URL}`);
-});
+async function start() {
+  try {
+    await connect();
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`API Gateway running on port ${PORT}`);
+      console.log(`Backend service URL: ${BACKEND_SERVICE_URL}`);
+      console.log(`Product service URL: ${PRODUCT_SERVICE_URL}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error.message);
+    process.exit(1);
+  }
+}
+
+start();
 
