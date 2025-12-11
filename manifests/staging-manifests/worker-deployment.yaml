@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: worker
-        image: asifmahmoud414/worker-service:stag-7f665eac8ca146d3ed41dd132709d113548c7b5d
+        image: asifmahmoud414/worker-service:stag-eea9f3b99e896f2ae6022d5b1cadf9e93dc2fed7
         command: ["python", "-u", "/app/worker.py"]
         resources:
           requests:
