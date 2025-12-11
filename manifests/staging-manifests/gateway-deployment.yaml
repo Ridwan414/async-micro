@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: asifmahmoud414/gateway-service:stag-0fc19ffe5558d2cc5262fe8211837c153e7c1091
+        image: asifmahmoud414/gateway-service:stag-4e4465f68d57a8bc54c1cf7d2712e902a28d73d8
         ports:
         - containerPort: 3000
         resources:
