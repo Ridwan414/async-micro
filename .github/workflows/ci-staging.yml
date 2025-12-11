@@ -1,159 +1,159 @@
-name: Staging CI/CD Pipeline
+# name: Staging CI/CD Pipeline
 
-on:
-  push:
-    branches: [stag]
+# on:
+#   push:
+#     branches: [stag]
 
-env:
-  REGISTRY: docker.io
-  IMAGE_PREFIX: asifmahmoud414
+# env:
+#   REGISTRY: docker.io
+#   IMAGE_PREFIX: asifmahmoud414
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    # Skip workflow if commit message contains [skip ci]
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
-    steps:
-      - uses: actions/checkout@v4
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+#     # Skip workflow if commit message contains [skip ci]
+#     if: "!contains(github.event.head_commit.message, '[skip ci]')"
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          pip install pytest requests
+#       - name: Install dependencies
+#         run: |
+#           pip install pytest requests
 
-      - name: Run unit tests
-        run: |
-          echo "Running staging tests..."
-          # Add your test commands here
+#       - name: Run unit tests
+#         run: |
+#           echo "Running staging tests..."
+#           # Add your test commands here
 
-  build-and-push-staging:
-    needs: test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service:
-          - name: api-service
-            path: services/backend
-          - name: gateway-service
-            path: services/gateway
-          - name: product-service
-            path: services/product
-          - name: worker-service
-            path: services/worker
+#   build-and-push-staging:
+#     needs: test
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         service:
+#           - name: api-service
+#             path: services/backend
+#           - name: gateway-service
+#             path: services/gateway
+#           - name: product-service
+#             path: services/product
+#           - name: worker-service
+#             path: services/worker
 
-    steps:
-      - uses: actions/checkout@v4
+#     steps:
+#       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+#       - name: Set up Docker Buildx
+#         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+#       - name: Login to Docker Hub
+#         uses: docker/login-action@v3
+#         with:
+#           username: ${{ secrets.DOCKERHUB_USERNAME }}
+#           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push staging images
-        uses: docker/build-push-action@v5
-        with:
-          context: ${{ matrix.service.path }}
-          push: true
-          tags: |
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:v1-stag
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:stag-latest
-            ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:stag-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#       - name: Build and push staging images
+#         uses: docker/build-push-action@v5
+#         with:
+#           context: ${{ matrix.service.path }}
+#           push: true
+#           tags: |
+#             ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:v1-stag
+#             ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:stag-latest
+#             ${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:stag-${{ github.sha }}
+#           cache-from: type=gha
+#           cache-to: type=gha,mode=max
 
-      - name: Image digest
-        run: echo "Built staging image for ${{ matrix.service.name }}"
+#       - name: Image digest
+#         run: echo "Built staging image for ${{ matrix.service.name }}"
 
-  update-manifests-staging:
-    needs: build-and-push-staging
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+#   update-manifests-staging:
+#     needs: build-and-push-staging
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           token: ${{ secrets.GITHUB_TOKEN }}
+#           fetch-depth: 0
 
-      - name: Update staging manifests with new image tags
-        run: |
-          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/api-service:.*|image: ${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}|g" manifests/staging-manifests/api-deployment.yaml
-          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/gateway-service:.*|image: ${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}|g" manifests/staging-manifests/gateway-deployment.yaml
-          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/product-service:.*|image: ${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}|g" manifests/staging-manifests/product-deployment.yaml
-          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/worker-service:.*|image: ${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}|g" manifests/staging-manifests/worker-deployment.yaml
+#       - name: Update staging manifests with new image tags
+#         run: |
+#           sed -i "s|image: ${{ env.IMAGE_PREFIX }}/api-service:.*|image: ${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}|g" manifests/staging-manifests/api-deployment.yaml
+#           sed -i "s|image: ${{ env.IMAGE_PREFIX }}/gateway-service:.*|image: ${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}|g" manifests/staging-manifests/gateway-deployment.yaml
+#           sed -i "s|image: ${{ env.IMAGE_PREFIX }}/product-service:.*|image: ${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}|g" manifests/staging-manifests/product-deployment.yaml
+#           sed -i "s|image: ${{ env.IMAGE_PREFIX }}/worker-service:.*|image: ${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}|g" manifests/staging-manifests/worker-deployment.yaml
 
-      - name: Commit and push manifest changes
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifests/staging-manifests/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "ci: update staging image tags to ${{ github.sha }} [skip ci]"
-            git push origin stag
-          fi
+#       - name: Commit and push manifest changes
+#         run: |
+#           git config user.name "GitHub Actions Bot"
+#           git config user.email "github-actions[bot]@users.noreply.github.com"
+#           git add manifests/staging-manifests/
+#           if git diff --staged --quiet; then
+#             echo "No changes to commit"
+#           else
+#             git commit -m "ci: update staging image tags to ${{ github.sha }} [skip ci]"
+#             git push origin stag
+#           fi
 
-      - name: Create Pull Request to main
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Create PR body file
-          cat > pr_body.md << 'EOF'
-          ## 🚀 Promote Staging to Production
+#       - name: Create Pull Request to main
+#         env:
+#           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         run: |
+#           # Create PR body file
+#           cat > pr_body.md << 'EOF'
+#           ## 🚀 Promote Staging to Production
           
-          This PR promotes the changes from staging to production.
+#           This PR promotes the changes from staging to production.
           
-          ### Changes:
-          - Updated staging manifests with images tagged: `stag-${{ github.sha }}`
-          - Services updated: api, gateway, product, worker
+#           ### Changes:
+#           - Updated staging manifests with images tagged: `stag-${{ github.sha }}`
+#           - Services updated: api, gateway, product, worker
           
-          ### Docker Images:
-          - `${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}`
-          - `${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}`
-          - `${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}`
-          - `${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}`
+#           ### Docker Images:
+#           - `${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}`
+#           - `${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}`
+#           - `${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}`
+#           - `${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}`
           
-          ### Testing:
-          - ✅ Staging deployment successful
-          - ⏳ Please verify staging environment before merging
+#           ### Testing:
+#           - ✅ Staging deployment successful
+#           - ⏳ Please verify staging environment before merging
           
-          **Source Branch:** `stag`
-          **Commit:** ${{ github.sha }}
-          EOF
+#           **Source Branch:** `stag`
+#           **Commit:** ${{ github.sha }}
+#           EOF
           
-          # Check if PR from stag to main already exists
-          EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
+#           # Check if PR from stag to main already exists
+#           EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
           
-          if [ -n "$EXISTING_PR" ]; then
-            echo "✅ PR already exists: #$EXISTING_PR"
-            echo "Updating existing PR description..."
-            gh pr edit $EXISTING_PR --body-file pr_body.md --add-label "staging-promotion,auto-pr"
-            echo "PR updated: $(gh pr view $EXISTING_PR --json url --jq '.url')"
-          else
-            echo "Creating new PR from stag to main..."
-            PR_URL=$(gh pr create \
-              --base main \
-              --head stag \
-              --title "chore: promote staging to production (${{ github.sha }})" \
-              --body-file pr_body.md \
-              --label "staging-promotion,auto-pr" 2>&1)
+#           if [ -n "$EXISTING_PR" ]; then
+#             echo "✅ PR already exists: #$EXISTING_PR"
+#             echo "Updating existing PR description..."
+#             gh pr edit $EXISTING_PR --body-file pr_body.md --add-label "staging-promotion,auto-pr"
+#             echo "PR updated: $(gh pr view $EXISTING_PR --json url --jq '.url')"
+#           else
+#             echo "Creating new PR from stag to main..."
+#             PR_URL=$(gh pr create \
+#               --base main \
+#               --head stag \
+#               --title "chore: promote staging to production (${{ github.sha }})" \
+#               --body-file pr_body.md \
+#               --label "staging-promotion,auto-pr" 2>&1)
             
-            if [ $? -eq 0 ]; then
-              echo "✅ PR created successfully: $PR_URL"
-            else
-              echo "⚠️ PR creation result: $PR_URL"
-              # Check if it's because PR already exists
-              EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
-              if [ -n "$EXISTING_PR" ]; then
-                echo "✅ PR already exists: #$EXISTING_PR"
-                gh pr view $EXISTING_PR --json url --jq '.url'
-              fi
-            fi
-          fi
+#             if [ $? -eq 0 ]; then
+#               echo "✅ PR created successfully: $PR_URL"
+#             else
+#               echo "⚠️ PR creation result: $PR_URL"
+#               # Check if it's because PR already exists
+#               EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
+#               if [ -n "$EXISTING_PR" ]; then
+#                 echo "✅ PR already exists: #$EXISTING_PR"
+#                 gh pr view $EXISTING_PR --json url --jq '.url'
+#               fi
+#             fi
+#           fi
