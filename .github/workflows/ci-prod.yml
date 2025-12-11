@@ -11,6 +11,8 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Skip workflow if commit message contains [skip ci]
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     steps:
       - uses: actions/checkout@v4
 
@@ -71,39 +73,30 @@ jobs:
         run: echo "Built production image for ${{ matrix.service.name }}"
         
 
-  # update-manifests:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  update-manifests-prod:
+    needs: build-and-push-prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-  #     - name: Update K8s manifests with new image tags
-  #       run: |
-  #         SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-  #         sed -i "s|image: ${{ env.IMAGE_PREFIX }}/api-service:.*|image: ${{ env.IMAGE_PREFIX }}/api-service:${SHORT_SHA}|g" manifests/api-deployment.yaml
-  #         sed -i "s|image: ${{ env.IMAGE_PREFIX }}/gateway-service:.*|image: ${{ env.IMAGE_PREFIX }}/gateway-service:${SHORT_SHA}|g" manifests/gateway-deployment.yaml
-  #         sed -i "s|image: ${{ env.IMAGE_PREFIX }}/product-service:.*|image: ${{ env.IMAGE_PREFIX }}/product-service:${SHORT_SHA}|g" manifests/product-deployment.yaml
-  #         sed -i "s|image: ${{ env.IMAGE_PREFIX }}/worker-service:.*|image: ${{ env.IMAGE_PREFIX }}/worker-service:${SHORT_SHA}|g" manifests/worker-deployment.yaml
+      - name: Update production manifests with new image tags
+        run: |
+          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/api-service:.*|image: ${{ env.IMAGE_PREFIX }}/api-service:prod-${{ github.sha }}|g" manifests/prod-manifests/api-deployment.yaml
+          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/gateway-service:.*|image: ${{ env.IMAGE_PREFIX }}/gateway-service:prod-${{ github.sha }}|g" manifests/prod-manifests/gateway-deployment.yaml
+          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/product-service:.*|image: ${{ env.IMAGE_PREFIX }}/product-service:prod-${{ github.sha }}|g" manifests/prod-manifests/product-deployment.yaml
+          sed -i "s|image: ${{ env.IMAGE_PREFIX }}/worker-service:.*|image: ${{ env.IMAGE_PREFIX }}/worker-service:prod-${{ github.sha }}|g" manifests/prod-manifests/worker-deployment.yaml
 
-  #     - name: Commit and push manifest changes
-  #       run: |
-  #         git config user.name "GitHub Actions"
-  #         git config user.email "actions@github.com"
-  #         git add manifests/
-  #         git commit -m "chore: update image tags to ${{ github.sha }}" || exit 0
-  #         git push
-
-  # load-test:
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   if: github.event_name == 'push'
-  #   steps:
-  #     - uses: actions/checkout@v4
-
-  #     - name: Run k6 smoke test
-  #       uses: grafana/k6-action@v0.3.1
-  #       with:
-  #         filename: load-tests/load-test.js
-  #       env:
-  #         BASE_URL: ${{ secrets.STAGING_URL }}
-  #       continue-on-error: true
+      - name: Commit and push manifest changes
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifests/prod-manifests/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "ci: update production image tags to ${{ github.sha }} [skip ci]"
+            git push origin main
+          fi
