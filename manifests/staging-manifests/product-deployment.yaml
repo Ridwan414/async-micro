@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: product
-        image: asifmahmoud414/product-service:stag-1439f58b6dbfe9efd7b480a9ee45ea994450d9d9
+        image: asifmahmoud414/product-service:stag-ddf3cdc79bed2b9cc00619c3473110ea3025ffba
         ports:
         - containerPort: 8001
         resources:
