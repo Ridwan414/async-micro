@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: worker
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: worker
@@ -16,6 +15,13 @@ spec:
       - name: worker
         image: asifmahmoud414/worker-service:v1
         command: ["python", "-u", "/app/worker.py"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
         env:
         - name: RABBITMQ_HOST
           value: "rabbitmq"
