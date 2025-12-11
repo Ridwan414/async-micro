@@ -101,33 +101,59 @@ jobs:
           fi
 
       - name: Create Pull Request to main
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: staging-to-prod-${{ github.sha }}
-          base: main
-          title: "chore: promote staging to production (${{ github.sha }})"
-          body: |
-            ## 🚀 Promote Staging to Production
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create PR body file
+          cat > pr_body.md << 'EOF'
+          ## 🚀 Promote Staging to Production
+          
+          This PR promotes the changes from staging to production.
+          
+          ### Changes:
+          - Updated staging manifests with images tagged: `stag-${{ github.sha }}`
+          - Services updated: api, gateway, product, worker
+          
+          ### Docker Images:
+          - `${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}`
+          - `${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}`
+          - `${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}`
+          - `${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}`
+          
+          ### Testing:
+          - ✅ Staging deployment successful
+          - ⏳ Please verify staging environment before merging
+          
+          **Source Branch:** `stag`
+          **Commit:** ${{ github.sha }}
+          EOF
+          
+          # Check if PR from stag to main already exists
+          EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR already exists: #$EXISTING_PR"
+            echo "Updating existing PR description..."
+            gh pr edit $EXISTING_PR --body-file pr_body.md --add-label "staging-promotion,auto-pr"
+            echo "PR updated: $(gh pr view $EXISTING_PR --json url --jq '.url')"
+          else
+            echo "Creating new PR from stag to main..."
+            PR_URL=$(gh pr create \
+              --base main \
+              --head stag \
+              --title "chore: promote staging to production (${{ github.sha }})" \
+              --body-file pr_body.md \
+              --label "staging-promotion,auto-pr" 2>&1)
             
-            This PR promotes the changes from staging to production.
-            
-            ### Changes:
-            - Updated staging manifests with images tagged: `stag-${{ github.sha }}`
-            - Services updated: api, gateway, product, worker
-            
-            ### Docker Images:
-            - `${{ env.IMAGE_PREFIX }}/api-service:stag-${{ github.sha }}`
-            - `${{ env.IMAGE_PREFIX }}/gateway-service:stag-${{ github.sha }}`
-            - `${{ env.IMAGE_PREFIX }}/product-service:stag-${{ github.sha }}`
-            - `${{ env.IMAGE_PREFIX }}/worker-service:stag-${{ github.sha }}`
-            
-            ### Testing:
-            - ✅ Staging deployment successful
-            - ⏳ Please verify staging environment before merging
-            
-            **Source Branch:** `stag`
-            **Commit:** ${{ github.sha }}
-          labels: |
-            staging-promotion
-            auto-pr
+            if [ $? -eq 0 ]; then
+              echo "✅ PR created successfully: $PR_URL"
+            else
+              echo "⚠️ PR creation result: $PR_URL"
+              # Check if it's because PR already exists
+              EXISTING_PR=$(gh pr list --base main --head stag --json number --jq '.[0].number' 2>/dev/null || echo "")
+              if [ -n "$EXISTING_PR" ]; then
+                echo "✅ PR already exists: #$EXISTING_PR"
+                gh pr view $EXISTING_PR --json url --jq '.url'
+              fi
+            fi
+          fi
