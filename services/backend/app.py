@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
+from prometheus_flask_exporter import PrometheusMetrics
 import pika
 import json
 import os
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "rabbitmq")
 RABBITMQ_USER = os.getenv("RABBITMQ_USER", "admin")

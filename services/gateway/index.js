@@ -4,6 +4,7 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const { connect, getDb } = require('./db');
+const { register } = require('./metrics');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +18,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'gateway' });
+});
+
+// Metrics endpoint for Prometheus
+app.get('/metrics', async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
 });
 
 // Sentry test endpoint

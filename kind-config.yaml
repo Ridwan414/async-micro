@@ -1,0 +1,35 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: microservices-prod
+nodes:
+- role: control-plane
+  extraPortMappings:
+  # ArgoCD HTTP
+  - containerPort: 30588
+    hostPort: 30588
+    protocol: TCP
+  # ArgoCD HTTPS
+  - containerPort: 31308
+    hostPort: 31308
+    protocol: TCP
+  # Gateway Service
+  - containerPort: 30000
+    hostPort: 30000
+    protocol: TCP
+  # API Service
+  - containerPort: 30080
+    hostPort: 30080
+    protocol: TCP
+  # RabbitMQ Management
+  - containerPort: 30672
+    hostPort: 30672
+    protocol: TCP
+  # Grafana
+  - containerPort: 30300
+    hostPort: 30300
+    protocol: TCP
+  # Prometheus
+  - containerPort: 30900
+    hostPort: 30900
+    protocol: TCP
+

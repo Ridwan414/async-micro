@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
+from prometheus_flask_exporter import PrometheusMetrics
 from datetime import datetime
 import uuid
 
 app = Flask(__name__)
+metrics = PrometheusMetrics(app)
 
 # In-memory database
 products_db = {}

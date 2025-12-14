@@ -1,0 +1,1 @@
+1. Bad and good practices of Devops, Microservices, Observability, CI/CD, GitOps, Deployment

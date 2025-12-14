@@ -8,9 +8,11 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "@sentry/node": "^8.0.0",
     "axios": "^1.13.2",
     "express": "^4.22.1",
-    "mongodb": "^6.12.0"
+    "mongodb": "^6.12.0",
+    "prom-client": "^15.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
